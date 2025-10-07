@@ -4,10 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Chaudhary Construction Invoice</title>
+
+<!-- Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <style>
-  :root{ --a4w: 794px; } /* ~A4 @96dpi */
+  /* A4 sizing at 96dpi */
+  :root { --a4w: 794px; --a4h: 1123px; }
 
   body{ font-family: Arial, Helvetica, sans-serif; background:#f4f4f4; margin:16px; }
 
@@ -22,23 +26,21 @@
   .btn.secondary{ background:#666; }
   .btn.danger{ background:#c62828; padding:4px 8px; border-radius:6px; font-size:12px; }
 
-  /* Page with single crisp border (no double line) */
+  /* Page (simple border – no shadows that cause dark fringes) */
   #page{
     width:var(--a4w);
+    min-height: var(--a4h);
     margin:0 auto;
     background:#fff;
     box-sizing:border-box;
     padding:14px;
     position:relative;
     overflow:hidden;
-    box-shadow: inset 0 0 0 3px #000; /* single outer square line */
+    border:3px solid #000; /* crisp outer line, not a shadow */
   }
 
   /* Invoice box */
-  #invoice{
-    background:#fff; color:#000; border:1px solid #000;
-    padding:18px 16px; box-sizing:border-box;
-  }
+  #invoice{ background:#fff; color:#000; border:1px solid #000; padding:18px 16px; box-sizing:border-box; }
 
   h2{ text-align:center; margin:2px 0; font-size:20px; }
   h4{ text-align:center; margin:2px 0; font-size:12px; font-weight:600; }
@@ -49,36 +51,61 @@
   table, th, td{ border:1px solid #000; }
   th, td{ padding:6px; vertical-align:top; }
 
-  /* Key:Value with address preserved newlines */
   .kv{ display:grid; grid-template-columns:130px 1fr; gap:4px 8px; }
   .kv .k{ font-weight:700; }
   .kv .v{ white-space:pre-line; }
 
-  /* Items */
+  /* Items (inputs) */
   #itemsTable td input{
     width:100%; box-sizing:border-box; padding:6px;
     border:1px solid #bdbdbd; border-radius:6px; font-size:13px;
   }
   #itemsTable td input[readonly]{ background:#f7f7f7; }
-  .actions-col{ width:80px; text-align:center; } /* visible on screen only */
+
+  /* Keep Action column visible on phones: sticky + horizontal scroll wrapper */
+  .table-wrap{ overflow-x:auto; }
+  th.actions-col, td.actions-col{
+    position: sticky; right: 0;
+    background:#fff; z-index: 2; /* stays on top while scrolling */
+    min-width: 84px;
+  }
+  th.actions-col{ z-index:3; } /* header above cells */
 
   /* Totals */
-  .totals .tax-input{
-    border:none; outline:none; background:transparent; width:60px; text-align:center; font-weight:bold;
-  }
-  .tax-pct-text{ display:none; } /* shown only in PDF/print */
+  .totals .tax-input{ border:none; outline:none; background:transparent; width:60px; text-align:center; font-weight:bold; }
+  .tax-pct-text{ display:none; }
 
-  .locked{ background:#f1f1f1; padding:8px; }
-  .footer-right{ text-align:right; margin-top:10px; }
-  .sign-img{ width:140px; height:auto; margin:4px 0; user-select:none; pointer-events:none; }
+  /* Simple boxed sections (no grey) */
+  .box{ border:1px solid #000; background:#fff; padding:10px 12px; margin-top:10px; }
 
-  /* Action buttons (not in PDF) */
+  /* Bank details */
+  .bank-box .row{ display:flex; gap:24px; flex-wrap:wrap; }
+  .bank-box b{ font-weight:700; }
+
+  /* T&C + Signature single outer box (no inner divider) */
+  .footer-box{ border:1px solid #000; background:#fff; padding:10px 12px; margin-top:10px; }
+  .footer-flex{ display:flex; align-items:center; gap:16px; }
+  .footer-flex .tc{ flex:1; }
+  .footer-flex .sig{ flex:0 0 35%; text-align:right; }
+
+  .sign-name{ font-weight:700; }
+  .sign-title{ font-size:12px; }
+  .sign-img{ display:inline-block; width:160px; height:auto; margin:6px 0 2px; user-select:none; pointer-events:none; }
+
+  /* Buttons container */
   #actions{ display:flex; gap:10px; justify-content:center; margin:12px auto; max-width:var(--a4w); }
 
   /* Mobile */
   @media (max-width: 640px){
-    .grid{ grid-template-columns:1fr; }
-    #page{ width:100%; padding:10px; }
+    :root { --a4w: 100%; }
+    body{ margin:8px; }
+    #page{ width:100%; padding:8px; }
+    .editor, #invoice{ width:100%; }
+    table, th, td{ font-size:11px; }
+    .btn{ font-size:13px; padding:7px 10px; }
+    .footer-flex{ flex-direction:column; align-items:stretch; }
+    .footer-flex .sig{ text-align:center; flex-basis:auto; }
+    .sign-img{ width:130px; }
   }
 
   /* Print/PDF rules */
@@ -89,30 +116,11 @@
     .tax-pct-text{ display:inline !important; }
     .no-print{ display:none !important; }
   }
-  
-  .footer-right {
-  text-align: right;
-  margin-top: 20px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.sign-img {
-  display: inline-block;
-  width: 120px;
-  height: auto;
-  margin: 4px 0;
-  user-select: none;
-  pointer-events: none;
-  vertical-align: middle;
-}
-
-  
-  
 </style>
 </head>
 <body>
 
-<!-- ====== EDITOR (placeholders only) ====== -->
+<!-- ====== EDITOR ====== -->
 <div class="editor" id="editor">
   <h3>Edit Details</h3>
   <div class="grid">
@@ -151,14 +159,9 @@
         <td style="width:40%">
           <strong>Party’s Details / Bill To</strong><br><br>
           <div class="kv">
-            <div class="k">Name :</div>
-            <div class="v" id="partyNameText"></div>
-
-            <div class="k">Address :</div>
-            <div class="v" id="partyAddressText"></div>
-
-            <div class="k">GSTIN No. :</div>
-            <div class="v" id="partyGSTText"></div>
+            <div class="k">Name :</div>     <div class="v" id="partyNameText"></div>
+            <div class="k">Address :</div>  <div class="v" id="partyAddressText"></div>
+            <div class="k">GSTIN No. :</div><div class="v" id="partyGSTText"></div>
           </div>
         </td>
         <td style="width:40%">
@@ -174,23 +177,25 @@
       </tr>
     </table>
 
-    <!-- Items -->
+    <!-- Items (scrollable on small screens so Action stays visible) -->
     <br/>
-    <table id="itemsTable">
-      <thead>
-        <tr>
-          <th style="width:50px;text-align:center">Sr</th>
-          <th>Description of Goods</th>
-          <th style="width:90px;text-align:center">SAC</th>
-          <th style="width:70px;text-align:center">Qty</th>
-          <th style="width:110px;text-align:center">Rate (₹)</th>
-          <th style="width:80px;text-align:center">UOM</th>
-          <th style="width:130px;text-align:center">Amount (₹)</th>
-          <th class="actions-col" id="actionHeader">Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-wrap">
+      <table id="itemsTable">
+        <thead>
+          <tr>
+            <th style="width:50px;text-align:center">Sr</th>
+            <th>Description of Goods</th>
+            <th style="width:90px;text-align:center">SAC</th>
+            <th style="width:70px;text-align:center">Qty</th>
+            <th style="width:110px;text-align:center">Rate (₹)</th>
+            <th style="width:80px;text-align:center">UOM</th>
+            <th style="width:130px;text-align:center">Amount (₹)</th>
+            <th class="actions-col" id="actionHeader">Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
     <!-- Totals -->
     <br/>
@@ -229,35 +234,36 @@
       </tr>
     </table>
 
-    <p><b>Rs. (in Words):</b> <span id="amountInWords">Zero Only</span></p>
-
-    <h3>BANK DETAILS:</h3>
-    <div class="locked">
-      <p><strong>Bank Account No.:</strong> 39930691999</p>
-      <p><strong>IFSC Code:</strong> SBIN0000718</p>
+    <div class="box bank-box">
+        <p><b>Rs. (in Words):</b> <span id="amountInWords">Zero Only</span></p>
+    </div>
+    <!-- BANK DETAILS (boxed, no shadow) -->
+    <div class="box bank-box">
+      <div style="font-weight:700; margin-bottom:6px;">BANK DETAILS:</div>
+      <div class="">
+        <div><b>Bank Account No.:</b> 39930691999</div>
+        <br>
+        <div><b>IFSC Code:</b> SBIN0000718</div>
+      </div>
     </div>
 
-    <h3>Terms & Conditions:</h3>
-    <div class="locked">
-      <ol>
-        <li>Goods once sold will not be taken back.</li>
-        <li>All disputes subject to Bihar Jurisdiction only.</li>
-      </ol>
+    <!-- T&C + Signature in one outer box (no internal divider) -->
+    <div class="footer-box">
+      <div class="footer-flex">
+        <div class="tc">
+          <div style="font-weight:700; margin-bottom:6px;">Terms & Conditions.</div>
+          <ol style="margin:0 0 0 18px; padding:0;">
+            <li>Goods once sold will not be taken back.</li>
+            <li>All disputes subject to Bihar Jurisdiction only.</li>
+          </ol>
+        </div>
+        <div class="sig">
+          <div>For <span class="sign-name">AMIT KUMAR</span></div>
+          <img id="signImg" class="sign-img" src="data:image/jpeg;base64,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" alt="Signature" /><br>
+          <div class="sign-title">Authorized Signatory</div>
+        </div>
+      </div>
     </div>
-
-    <!-- Fixed Signature (from your folder) -->
-   <p class="footer-right">
-	  For <b>AMIT KUMAR</b><br>
-	  <img
-		id="signImg"
-		class="sign-img"
-		src="data:image/jpeg;base64,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"
-		alt="Signature"
-	  /><br>
-	  Authorized Signatory
-	</p>
-
-
 
   </div>
 </div>
@@ -268,7 +274,7 @@
 </div>
 
 <script>
-  // ---------- Items ----------
+  /* ---------- Items ---------- */
   const tbody = document.querySelector("#itemsTable tbody");
   let sr = 0;
   function addRow(){
@@ -292,7 +298,7 @@
   addRow();
   document.getElementById("addRowBtn").addEventListener("click", addRow);
 
-  // ---------- Editor -> Preview ----------
+  /* ---------- Editor -> Preview ---------- */
   function applyToPreview(){
     const v = id => document.getElementById(id).value || "";
     const setText = (id, text) => document.getElementById(id).textContent = text;
@@ -312,7 +318,7 @@
   document.getElementById("applyBtn").addEventListener("click", applyToPreview);
   applyToPreview();
 
-  // ---------- Totals / GST ----------
+  /* ---------- Totals / GST ---------- */
   function calculateTotals(){
     let total = 0;
     document.querySelectorAll("#itemsTable tbody tr").forEach(r=>{
@@ -366,67 +372,87 @@
   tbody.addEventListener("input", calculateTotals);
   calculateTotals();
 
-  // ---------- PDF (Action column removed; inputs -> text; crisp border) ----------
+  /* ---------- PDF: A4 Clone (no black edges, identical everywhere) ---------- */
   document.getElementById("generateBtn").addEventListener("click", async () => {
     applyToPreview();
     calculateTotals();
 
-    // 1) Convert item inputs to plain text (hide placeholders)
-    const altered = [];
-    document.querySelectorAll("#itemsTable tbody tr").forEach(tr=>{
-      tr.querySelectorAll("input").forEach(inp=>{
+    // Clone the A4 page off-screen
+    const original = document.getElementById("page");
+    const clone = original.cloneNode(true);
+
+    const holder = document.createElement("div");
+    holder.style.position = "fixed";
+    holder.style.left = "-10000px";
+    holder.style.top = "0";
+    holder.style.width = "var(--a4w)";
+    holder.style.height = "auto";
+    holder.style.zIndex = "-1";
+    document.body.appendChild(holder);
+
+    // Force exact A4 px on clone and remove outer border for capture (avoids dark fringes)
+    clone.style.width = "794px";
+    clone.style.minHeight = "1123px";
+    clone.style.border = "none";       // no outer border on the clone
+    clone.style.background = "#fff";
+
+    // Convert item inputs to plain text only in clone
+    clone.querySelectorAll("#itemsTable tbody tr").forEach(tr => {
+      tr.querySelectorAll("input").forEach(inp => {
         const td = inp.parentElement;
-        altered.push({cell:td, html:td.innerHTML});
         td.textContent = (inp.value || "").trim();
       });
     });
 
-    // 2) Remove Action column (header + all cells) for PDF capture
-    const actionHeader = document.getElementById("actionHeader");
-    const actionCells  = Array.from(document.querySelectorAll("#itemsTable tbody .actions-col"));
-    const savedAction  = { headerHTML: actionHeader.outerHTML, cellsHTML: actionCells.map(td=>td.outerHTML) };
+    // Hide Action column in the clone
+    const ch = clone.querySelector("#actionHeader");
+    if (ch) ch.style.display = "none";
+    clone.querySelectorAll("#itemsTable tbody .actions-col").forEach(td => td.style.display = "none");
 
-    // Hide header cell
-    actionHeader.style.display = "none";
-    // Hide each action td
-    actionCells.forEach(td => td.style.display = "none");
+    // Hide tax inputs; show mirrored % text
+    clone.querySelectorAll(".totals .tax-input").forEach(i => i.style.display = "none");
+    clone.querySelectorAll(".tax-pct-text").forEach(s => s.style.display = "inline");
 
-    // 3) Hide % inputs; show mirrored text
-    const taxInputs = document.querySelectorAll(".totals .tax-input");
-    const prevDisp  = [];
-    taxInputs.forEach(i=>{ prevDisp.push(i.style.display); i.style.display="none"; });
+    // Remove editor/actions if present in clone (safety)
+    const ce = clone.querySelector("#editor"); if (ce) ce.remove();
+    const ca = clone.querySelector("#actions"); if (ca) ca.remove();
 
-    // 4) Hide editor & buttons
-    const editor = document.getElementById("editor");
-    const actions = document.getElementById("actions");
-    const prevE = editor.style.display, prevA = actions.style.display;
-    editor.style.display = "none"; actions.style.display = "none";
+    holder.appendChild(clone);
 
-    // Ensure signature image is loaded
-    const imgs = Array.from(document.querySelectorAll("#page img"))
+    // Ensure images loaded in clone
+    const sign = clone.querySelector("#signImg");
+    if (sign && !sign.complete) {
+      await new Promise(res => { sign.onload = res; sign.onerror = res; });
+    }
+    const pending = Array.from(clone.querySelectorAll("img"))
       .filter(img => !img.complete || img.naturalWidth === 0)
       .map(img => img.decode ? img.decode().catch(()=>{}) : Promise.resolve());
-    await Promise.all(imgs);
+    await Promise.all(pending);
 
-    // 5) Capture
-    const canvas  = await html2canvas(document.getElementById("page"), {
-      scale: 2, backgroundColor: "#fff", useCORS: true
+    // Capture with a white background
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      backgroundColor: "#fff",
+      useCORS: true
     });
-    const img     = canvas.toDataURL("image/png");
+
+    const img = canvas.toDataURL("image/png");
     const { jsPDF } = window.jspdf;
-    const pdf  = new jsPDF("p","mm","a4");
-    const w    = pdf.internal.pageSize.getWidth();
-    const h    = (canvas.height * w) / canvas.width;
+    const pdf = new jsPDF("p","mm","a4");        // always A4
+    const w = pdf.internal.pageSize.getWidth();  // 210mm
+    const h = pdf.internal.pageSize.getHeight(); // 297mm
+
+    // Paint a white page first (kills any viewer black)
+    pdf.setFillColor(255,255,255);
+    pdf.rect(0,0,w,h,"F");
+
+    // Cover full page with the image
     pdf.addImage(img, "PNG", 0, 0, w, h);
+
     const fileName = (document.getElementById("invoiceNoText").textContent || "CC") + ".pdf";
     pdf.save(`Invoice_${fileName}`);
 
-    // 6) Restore table & UI
-    altered.forEach(({cell, html})=>{ cell.innerHTML = html; });
-    actionHeader.style.display = "";
-    actionCells.forEach(td => td.style.display = "");
-    taxInputs.forEach((i,idx)=> i.style.display = prevDisp[idx] || "");
-    editor.style.display = prevE || ""; actions.style.display = prevA || "";
+    holder.remove(); // cleanup
   });
 </script>
 </body>
