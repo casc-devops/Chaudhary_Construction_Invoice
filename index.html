@@ -134,6 +134,7 @@
     <div><label>Invoice No.</label><input id="in_invoiceNo" placeholder="Please enter Invoice No."></div>
     <div><label>Invoice Date (dd/mm/yyyy)</label><input id="in_invoiceDate" placeholder="Please enter Invoice Date"></div>
     <div><label>Work Order No.</label><input id="in_workOrder" placeholder="Please enter Work Order No."></div>
+    <div><label>Service Code</label><input id="in_serviceCode" placeholder="Please enter Service code"></div>
     <div><label>Dispatch Through</label><input id="in_dispatch" placeholder="Please enter Dispatch Through"></div>
     <div><label>Vehicle No.</label><input id="in_vehicle" placeholder="Please enter Vehicle No."></div>
     <div><label>Place of Supply</label><input id="in_place" placeholder="Please enter Place of Supply"></div>
@@ -169,6 +170,7 @@
             <div class="k">Invoice No. :</div>     <div class="v" id="invoiceNoText"></div>
             <div class="k">Invoice Date :</div>    <div class="v" id="invoiceDateText"></div>
             <div class="k">Work Order No. :</div>  <div class="v" id="workOrderText"></div>
+            <div class="k">Service Code :</div>  <div class="v" id="serviceCodeText"></div>
             <div class="k">Dispatch Through :</div><div class="v" id="dispatchText"></div>
             <div class="k">Vehicle No. :</div>     <div class="v" id="vehicleText"></div>
             <div class="k">Place of Supply :</div> <div class="v" id="placeText"></div>
@@ -311,6 +313,7 @@
     setText("invoiceNoText", v("in_invoiceNo"));
     setText("invoiceDateText", v("in_invoiceDate"));
     setText("workOrderText", v("in_workOrder"));
+    setText("serviceCodeText", v("in_serviceCode"));
     setText("dispatchText", v("in_dispatch"));
     setText("vehicleText", v("in_vehicle"));
     setText("placeText", v("in_place"));
@@ -457,4 +460,5 @@
 </script>
 </body>
 </html>
+
 
