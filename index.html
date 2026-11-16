@@ -280,7 +280,34 @@ $('addRowBtn').addEventListener('click',addRow);
 tbody.addEventListener('click',e=>{if(e.target.closest('.delete-row')){e.target.closest('tr').remove();renumber();updateAmounts();requestPreview()}});
 tbody.addEventListener('input',()=>{updateAmounts();requestPreview()});
 $('editor').addEventListener('input',requestPreview);
-$('applyBtn').addEventListener('click',renderPreview);
+
+$('applyBtn').addEventListener('click', function () {
+
+    try {
+        // Update item amounts
+        updateAmounts();
+
+        // Get latest invoice details
+        const invoiceData = details();
+
+        // Generate invoice preview
+        paginate($('preview'), invoiceData);
+
+        // Scroll to the invoice preview
+        $('preview').scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+
+    } catch (error) {
+
+        console.error('Preview Error:', error);
+
+        alert('Unable to preview invoice: ' + error.message);
+    }
+
+});
+
 
 
 $('generateBtn').addEventListener('click',async()=>{
