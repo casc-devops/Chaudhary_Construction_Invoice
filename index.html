@@ -1,1441 +1,309 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chaudhary Construction Invoice</title>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
 <style>
-:root {
-    --a4w: 794px;
-    --a4h: 1123px;
-}
-
-* {
-    box-sizing: border-box;
-}
-
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f2f4f7;
-    margin: 16px;
-    color: #111;
-}
-
-.editor {
-    max-width: 794px;
-    margin: 0 auto 16px;
-    padding: 16px;
-    background: white;
-    border: 1px solid #d5d8dd;
-    border-radius: 10px;
-}
-
-h3 {
-    font-size: 17px;
-    margin: 0 0 14px;
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-
-.field.wide {
-    grid-column: 1/-1;
-}
-
-.field label {
-    display: block;
-    font-size: 13px;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.field input,
-.field textarea {
-    width: 100%;
-    border: 1px solid #bbb;
-    border-radius: 6px;
-    font: 13px Arial;
-    padding: 9px;
-}
-
-.row-actions,
-#actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 14px;
-}
-
-#actions {
-    max-width: 794px;
-    margin: 14px auto;
-    justify-content: center;
-}
-
-.btn {
-    background: #0869db;
-    border: 0;
-    border-radius: 7px;
-    color: #fff;
-    cursor: pointer;
-    padding: 10px 14px;
-    font-weight: bold;
-}
-
-.btn.secondary {
-    background: #555;
-}
-
-.btn.danger {
-    background: #bd2929;
-    padding: 6px 8px;
-    font-size: 12px;
-}
-
-.btn:disabled {
-    opacity: .55;
-    cursor: wait;
-}
-
-.help {
-    font-size: 12px;
-    color: #555;
-    margin: 9px 0 0;
-}
-
-/* A4 pages */
-#preview {
-    max-width: 794px;
-    margin: auto;
-}
-
-.pdf-page {
-    width: 794px;
-    height: 1123px;
-    min-height: 1123px;
-    max-height: 1123px;
-    overflow: hidden;
-    background: #fff;
-    margin: 0 auto 14px;
-    padding: 14px;
-    border: 2px solid #000;
-}
-
-.invoice-sheet {
-    width: 100%;
-    min-height: 100%;
-    border: 1px solid #000;
-    padding: 15px 14px;
-    background: #fff;
-}
-
-/* Header */
-.brand {
-    text-align: center;
-}
-
-.brand h4 {
-    font-size: 11px;
-    margin: 2px 0 5px;
-}
-
-.brand h2 {
-    font-size: 25px;
-    margin: 2px 0 4px;
-}
-
-.brand .subtitle {
-    font-size: 12px;
-    font-weight: 700;
-    margin-bottom: 5px;
-}
-
-.brand .gstin {
-    font-size: 13px;
-    margin-bottom: 8px;
-}
-
-.brand.compact h2 {
-    font-size: 19px;
-}
-
-.brand.compact h4,
-.brand.compact .subtitle {
-    display: none;
-}
-
-.brand.compact .gstin {
-    font-size: 11px;
-}
-
-.continued {
-    font-weight: bold;
-    text-align: right;
-    font-size: 11px;
-    margin: 2px 0 8px;
-}
-
-/* Tables */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-    font-size: 12px;
-}
-
-th,
-td {
-    border: 1px solid #000;
-    padding: 6px;
-    vertical-align: top;
-
-    /* Long text wrapping */
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    white-space: pre-wrap;
-}
-
-th {
-    font-weight: bold;
-    text-align: center;
-}
-
-.info-table {
-    margin-bottom: 12px;
-}
-
-.info-table td {
-    width: 50%;
-}
-
-.kv {
-    display: grid;
-    grid-template-columns: 110px minmax(0,1fr);
-    gap: 4px 5px;
-    font-size: 11.5px;
-}
-
-.k {
-    font-weight: bold;
-}
-
-.v {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    min-width: 0;
-}
-
-/* Item column widths - editor */
-#itemsTable th:nth-child(1) { width: 5%; }
-#itemsTable th:nth-child(2) { width: 29%; }
-#itemsTable th:nth-child(3) { width: 12%; }
-#itemsTable th:nth-child(4) { width: 8%; }
-#itemsTable th:nth-child(5) { width: 12%; }
-#itemsTable th:nth-child(6) { width: 9%; }
-#itemsTable th:nth-child(7) { width: 15%; }
-#itemsTable th:nth-child(8) { width: 10%; }
-
-/* Item editor */
-.items-table td {
-    text-align: left;
-}
-
-.items-table .number {
-    text-align: right;
-}
-
-.items-table textarea,
-.items-table input {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    font: 12px Arial;
-    border: 1px solid #bbb;
-    border-radius: 5px;
-    padding: 5px;
-    background: #fff;
-}
-
-.items-table textarea {
-    resize: vertical;
-    min-height: 34px;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    white-space: pre-wrap;
-}
-
-.items-table input[readonly] {
-    background: #f5f5f5;
-}
-
-.items-table .actions-col {
-    text-align: center;
-}
-
-/* Totals */
-.totals {
-    margin-top: 12px;
-}
-
-.totals td:last-child {
-    width: 28%;
-    text-align: right;
-}
-
-.box,
-.footer-box {
-    border: 1px solid #000;
-    padding: 10px 12px;
-    margin-top: 10px;
-    font-size: 12px;
-}
-
-.footer-flex {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 15px;
-}
-
-.footer-flex .tc {
-    flex: 1;
-}
-
-.footer-flex .sig {
-    width: 36%;
-    text-align: right;
-}
-
-.footer-flex ol {
-    margin: 6px 0 0 18px;
-    padding: 0;
-}
-
-.sign-img {
-    display: block;
-    max-width: 160px;
-    max-height: 75px;
-    margin: 8px 0 3px auto;
-    object-fit: contain;
-}
-
-.sign-title {
-    font-size: 11px;
-}
-
-.page-count {
-    font-size: 10px;
-    text-align: right;
-    margin-top: 8px;
-}
-
-/* PDF table - seven columns without action */
-.export-page .items-table th:nth-child(1) { width: 5%; }
-.export-page .items-table th:nth-child(2) { width: 34%; }
-.export-page .items-table th:nth-child(3) { width: 13%; }
-.export-page .items-table th:nth-child(4) { width: 8%; }
-.export-page .items-table th:nth-child(5) { width: 13%; }
-.export-page .items-table th:nth-child(6) { width: 10%; }
-.export-page .items-table th:nth-child(7) { width: 17%; }
-
-.export-page .items-table td {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-.export-page .invoice-sheet {
-    min-height: 0;
-}
-
-@media (max-width: 840px) {
-    body {
-        margin: 8px;
-    }
-
-    .editor {
-        max-width: 100%;
-    }
-
-    #preview {
-        overflow-x: auto;
-    }
-
-    .grid {
-        grid-template-columns: 1fr;
-    }
-
-    .field.wide {
-        grid-column: auto;
-    }
-}
-
-@media print {
-    body {
-        margin: 0;
-        background: #fff;
-    }
-
-    .editor,
-    #actions {
-        display: none !important;
-    }
-
-    .pdf-page {
-        margin: 0;
-        border: 0;
-        break-after: page;
-        page-break-after: always;
-    }
-
-    .pdf-page:last-child {
-        break-after: auto;
-        page-break-after: auto;
-    }
-}
+:root{--a4w:794px;--a4h:1123px}
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;background:#f2f4f7;margin:16px;color:#111}
+.editor{max-width:794px;margin:0 auto 16px;padding:16px;background:white;border:1px solid #d5d8dd;border-radius:10px}
+h3{font-size:17px;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field.wide{grid-column:1/-1}
+.field label{display:block;font-size:13px;font-weight:bold;margin-bottom:5px}
+.field input,.field textarea{width:100%;border:1px solid #bbb;border-radius:6px;font:13px Arial;padding:9px}
+.row-actions,#actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+#actions{max-width:794px;margin:14px auto;justify-content:center}
+.btn{background:#0869db;border:0;border-radius:7px;color:#fff;cursor:pointer;padding:10px 14px;font-weight:bold}
+.btn.secondary{background:#555}.btn.danger{background:#bd2929;padding:6px 8px;font-size:12px}
+.btn:disabled{opacity:.55;cursor:wait}
+.help{font-size:12px;color:#555;margin:9px 0 0}
+/* A4 sheets, each rendered independently as one PDF page. */
+#preview{max-width:794px;margin:auto}
+.pdf-page{width:794px;height:1123px;min-height:1123px;max-height:1123px;overflow:hidden;background:#fff;margin:0 auto 14px;padding:14px;border:2px solid #000}
+.invoice-sheet{width:100%;min-height:100%;border:1px solid #000;padding:15px 14px;background:#fff}
+.brand{text-align:center}
+.brand h4{font-size:11px;margin:2px 0 5px}
+.brand h2{font-size:25px;margin:2px 0 4px}
+.brand .subtitle{font-size:12px;font-weight:700;margin-bottom:5px}
+.brand .gstin{font-size:13px;margin-bottom:8px}
+.brand.compact h2{font-size:19px}.brand.compact h4{display:none}.brand.compact .subtitle{display:none}.brand.compact .gstin{font-size:11px}
+.continued{font-weight:bold;text-align:right;font-size:11px;margin:2px 0 8px}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}
+th,td{border:1px solid #000;padding:6px;vertical-align:top;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap}
+th{font-weight:bold;text-align:center}
+.info-table{margin-bottom:12px}.info-table td{width:50%}
+.kv{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 5px;font-size:11.5px}
+.k{font-weight:bold}.v{white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+#itemsTable th:nth-child(1),.items-table th:nth-child(1){width:5%}
+#itemsTable th:nth-child(2),.items-table th:nth-child(2){width:29%}
+#itemsTable th:nth-child(3),.items-table th:nth-child(3){width:12%}
+#itemsTable th:nth-child(4),.items-table th:nth-child(4){width:8%}
+#itemsTable th:nth-child(5),.items-table th:nth-child(5){width:12%}
+#itemsTable th:nth-child(6),.items-table th:nth-child(6){width:9%}
+#itemsTable th:nth-child(7),.items-table th:nth-child(7){width:15%}
+#itemsTable th:nth-child(8),.items-table th:nth-child(8){width:10%}
+.items-table td{text-align:left}.items-table .number{text-align:right}
+.items-table textarea,.items-table input{width:100%;min-width:0;max-width:100%;font:12px Arial;border:1px solid #bbb;border-radius:5px;padding:5px;background:#fff}
+.items-table textarea{resize:vertical;min-height:34px;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap}
+.items-table input[readonly]{background:#f5f5f5}
+.items-table .actions-col{text-align:center}
+.totals{margin-top:12px}.totals td:last-child{width:28%;text-align:right}
+.tax-input{width:55px;border:1px solid #aaa;border-radius:4px;font-size:12px;padding:4px;text-align:center}
+.box,.footer-box{border:1px solid #000;padding:10px 12px;margin-top:10px;font-size:12px}
+.footer-flex{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.footer-flex .tc{flex:1}.footer-flex .sig{width:36%;text-align:right}
+.footer-flex ol{margin:6px 0 0 18px;padding:0}
+.sign-img{display:block;width:160px;height:45px;max-width:160px;max-height:75px;margin:8px 0 3px auto;object-fit:contain}
+.sign-title{font-size:11px}
+.pdf-page{position:relative}.page-count{position:absolute;right:24px;bottom:12px;font-size:10px;text-align:right;background:#fff;padding:2px 5px}
+/* Exported pages use exactly seven columns, with no controls. */
+.export-page .items-table th:nth-child(1){width:5%}
+.export-page .items-table th:nth-child(2){width:34%}
+.export-page .items-table th:nth-child(3){width:13%}
+.export-page .items-table th:nth-child(4){width:8%}
+.export-page .items-table th:nth-child(5){width:13%}
+.export-page .items-table th:nth-child(6){width:10%}
+.export-page .items-table th:nth-child(7){width:17%}
+.export-page .items-table td{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+.export-page .invoice-sheet{min-height:0}
+@media(max-width:840px){body{margin:8px}.editor{max-width:100%}#preview{overflow-x:auto}.grid{grid-template-columns:1fr}.field.wide{grid-column:auto}}
+@media print{body{margin:0;background:#fff}.editor,#actions{display:none!important}.pdf-page{margin:0;border:0;break-after:page;page-break-after:always}.pdf-page:last-child{break-after:auto;page-break-after:auto}}
 </style>
 </head>
-
 <body>
-
-<!-- INVOICE EDITOR -->
 <div class="editor" id="editor">
-
-    <h3>Edit Invoice Details</h3>
-
-    <div class="grid">
-
-        <div class="field">
-            <label for="in_partyName">Party Name</label>
-            <input id="in_partyName"
-                   placeholder="Enter party name">
-        </div>
-
-        <div class="field">
-            <label for="in_partyGST">Party GSTIN</label>
-            <input id="in_partyGST"
-                   placeholder="Enter GSTIN">
-        </div>
-
-        <div class="field wide">
-            <label for="in_partyAddress">Party Address</label>
-            <textarea id="in_partyAddress"
-                      rows="3"
-                      placeholder="Enter full address"></textarea>
-        </div>
-
-        <div class="field">
-            <label for="in_invoiceNo">Invoice No.</label>
-            <input id="in_invoiceNo"
-                   placeholder="Enter invoice number">
-        </div>
-
-        <div class="field">
-            <label for="in_invoiceDate">Invoice Date (dd/mm/yyyy)</label>
-            <input id="in_invoiceDate"
-                   placeholder="dd/mm/yyyy">
-        </div>
-
-        <div class="field">
-            <label for="in_workOrder">Work Order No.</label>
-            <input id="in_workOrder">
-        </div>
-
-        <div class="field">
-            <label for="in_serviceCode">Service Code</label>
-            <input id="in_serviceCode">
-        </div>
-
-        <div class="field">
-            <label for="in_dispatch">Dispatch Through</label>
-            <input id="in_dispatch">
-        </div>
-
-        <div class="field">
-            <label for="in_vehicle">Vehicle No.</label>
-            <input id="in_vehicle">
-        </div>
-
-        <div class="field">
-            <label for="in_place">Place of Supply</label>
-            <input id="in_place">
-        </div>
-
-        <div class="field">
-            <label for="in_signature">Signature Image (optional)</label>
-            <input id="in_signature"
-                   type="file"
-                   accept="image/png,image/jpeg,image/webp">
-        </div>
-
-        <div class="field">
-            <label for="sgst">SGST %</label>
-            <input id="sgst" type="number"
-                   min="0" max="100" step="0.01" value="0">
-        </div>
-
-        <div class="field">
-            <label for="cgst">CGST %</label>
-            <input id="cgst" type="number"
-                   min="0" max="100" step="0.01" value="0">
-        </div>
-
-        <div class="field">
-            <label for="igst">IGST %</label>
-            <input id="igst" type="number"
-                   min="0" max="100" step="0.01" value="18">
-        </div>
-
-    </div>
-
-    <div class="row-actions">
-        <button type="button"
-                class="btn"
-                id="applyBtn">
-            Apply to Preview
-        </button>
-
-        <button type="button"
-                class="btn secondary"
-                id="addRowBtn">
-            + Add Item Row
-        </button>
-    </div>
-
-    <p class="help">
-        Description and SAC accept long or multiline text.
-        PDF pages are created at row boundaries.
-    </p>
+ <h3>Edit Invoice Details</h3>
+ <div class="grid">
+  <div class="field"><label for="in_partyName">Party Name</label><input id="in_partyName" placeholder="Enter party name"></div>
+  <div class="field"><label for="in_partyGST">Party GSTIN</label><input id="in_partyGST" placeholder="Enter GSTIN"></div>
+  <div class="field wide"><label for="in_partyAddress">Party Address</label><textarea id="in_partyAddress" rows="3" placeholder="Enter full address"></textarea></div>
+  <div class="field"><label for="in_invoiceNo">Invoice No.</label><input id="in_invoiceNo" placeholder="Enter invoice number"></div>
+  <div class="field"><label for="in_invoiceDate">Invoice Date (dd/mm/yyyy)</label><input id="in_invoiceDate" placeholder="dd/mm/yyyy"></div>
+  <div class="field"><label for="in_workOrder">Work Order No.</label><input id="in_workOrder"></div>
+  <div class="field"><label for="in_serviceCode">Service Code</label><input id="in_serviceCode"></div>
+  <div class="field"><label for="in_dispatch">Dispatch Through</label><input id="in_dispatch"></div>
+  <div class="field"><label for="in_vehicle">Vehicle No.</label><input id="in_vehicle"></div>
+  <div class="field"><label for="in_place">Place of Supply</label><input id="in_place"></div>
+  <div class="field"><label for="sgst">SGST %</label><input id="sgst" type="number" min="0" max="100" step="0.01" value="0"></div>
+  <div class="field"><label for="cgst">CGST %</label><input id="cgst" type="number" min="0" max="100" step="0.01" value="0"></div>
+  <div class="field"><label for="igst">IGST %</label><input id="igst" type="number" min="0" max="100" step="0.01" value="18"></div>
+ </div>
+ <div class="row-actions">
+  <button type="button" class="btn" id="applyBtn">Apply to Preview</button>
+  <button type="button" class="btn secondary" id="addRowBtn">+ Add Item Row</button>
+ </div>
+ <p class="help">Description and SAC accept long or multiline text. The signature is embedded permanently. PDF pages are created at row boundaries.</p>
 </div>
 
-<!-- INVOICE ITEMS -->
+<!-- The editable item table is kept on screen; the PDF preview is built separately. -->
 <div class="editor" id="itemEditor">
-
-    <h3>Invoice Items</h3>
-
-    <div style="overflow-x:auto">
-
-        <table id="itemsTable"
-               class="items-table"
-               style="min-width:680px">
-
-            <thead>
-                <tr>
-                    <th>Sr</th>
-                    <th>Description of Goods</th>
-                    <th>SAC</th>
-                    <th>Qty</th>
-                    <th>Rate (₹)</th>
-                    <th>UOM</th>
-                    <th>Amount (₹)</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-
-            <tbody></tbody>
-
-        </table>
-
-    </div>
-
+ <h3>Invoice Items</h3>
+ <div style="overflow-x:auto">
+  <table id="itemsTable" class="items-table" style="min-width:680px">
+   <thead><tr><th>Sr</th><th>Description of Goods</th><th>SAC</th><th>Qty</th><th>Rate (₹)</th><th>UOM</th><th>Amount (₹)</th><th>Action</th></tr></thead>
+   <tbody></tbody>
+  </table>
+ </div>
 </div>
-
-<!-- PDF BUTTON -->
-<div id="actions">
-    <button type="button"
-            class="btn"
-            id="generateBtn">
-        Generate PDF
-    </button>
-</div>
-
-<!-- INVOICE PREVIEW -->
+<div id="actions"><button type="button" class="btn" id="generateBtn">Generate PDF</button></div>
 <div id="preview" aria-label="Invoice preview"></div>
 
 <script>
 'use strict';
-
 const $ = id => document.getElementById(id);
 const tbody = document.querySelector('#itemsTable tbody');
-
-let signatureData = '';
+const signatureData = 'data:image/jpeg;base64,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';
 let previewQueued = false;
-
-const money = x =>
-    '₹ ' + (Number(x) || 0).toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-
+const money = x => '₹ ' + (Number(x) || 0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num = x => Math.max(0, Number(x) || 0);
+const text = value => String(value == null ? '' : value);
+const escapeHTML = s => text(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const text = value =>
-    String(value == null ? '' : value);
-
-const escapeHTML = s =>
-    text(s).replace(/[&<>"']/g, c => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[c]));
-
-/* ---------------- ADD ITEM ---------------- */
-
-function addRow() {
-
-    const tr = document.createElement('tr');
-
-    tr.innerHTML = `
-        <td class="serial" style="text-align:center"></td>
-
-        <td>
-            <textarea class="desc"
-                      rows="2"
-                      placeholder="Enter description"></textarea>
-        </td>
-
-        <td>
-            <textarea class="sac"
-                      rows="2"
-                      placeholder="SAC"></textarea>
-        </td>
-
-        <td>
-            <input class="qty"
-                   type="number"
-                   min="0"
-                   step="any"
-                   value="1">
-        </td>
-
-        <td>
-            <input class="rate"
-                   type="number"
-                   min="0"
-                   step="0.01"
-                   value="0">
-        </td>
-
-        <td>
-            <input class="uom"
-                   type="text"
-                   placeholder="Nos">
-        </td>
-
-        <td>
-            <input class="amount"
-                   readonly
-                   value="0.00">
-        </td>
-
-        <td class="actions-col">
-            <button type="button"
-                    class="btn danger delete-row">
-                Delete
-            </button>
-        </td>
-    `;
-
-    tbody.appendChild(tr);
-
-    renumber();
-    updateAmounts();
-    requestPreview();
+function addRow(){
+ const tr=document.createElement('tr');
+ tr.innerHTML=`<td class="serial" style="text-align:center"></td>
+   <td><textarea class="desc" rows="2" placeholder="Enter description"></textarea></td>
+   <td><textarea class="sac" rows="2" placeholder="SAC"></textarea></td>
+   <td><input class="qty" type="number" min="0" step="any" value="1"></td>
+   <td><input class="rate" type="number" min="0" step="0.01" value="0"></td>
+   <td><input class="uom" type="text" placeholder="Nos"></td>
+   <td><input class="amount" readonly value="0.00"></td>
+   <td class="actions-col"><button type="button" class="btn danger delete-row">Delete</button></td>`;
+ tbody.appendChild(tr);renumber();updateAmounts();requestPreview();
+}
+function renumber(){[...tbody.rows].forEach((tr,i)=>tr.querySelector('.serial').textContent=i+1)}
+function values(){return [...tbody.rows].map((tr,i)=>({
+ sr:i+1,desc:tr.querySelector('.desc').value,sac:tr.querySelector('.sac').value,
+ qty:num(tr.querySelector('.qty').value),rate:num(tr.querySelector('.rate').value),
+ uom:tr.querySelector('.uom').value
+}));}
+function updateAmounts(){for(const tr of tbody.rows){const amt=num(tr.querySelector('.qty').value)*num(tr.querySelector('.rate').value);tr.querySelector('.amount').value=amt.toFixed(2)}}
+function numberWords(n){
+ n=Math.floor(num(n));if(n===0)return 'Zero';
+ const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+ const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+ const under100=x=>x<20?a[x]:b[Math.floor(x/10)]+(x%10?' '+a[x%10]:'');
+ const under1000=x=>x<100?under100(x):a[Math.floor(x/100)]+' Hundred'+(x%100?' '+under100(x%100):'');
+ const parts=[];
+ for(const [size,name] of [[10000000,'Crore'],[100000,'Lakh'],[1000,'Thousand']]){
+   const q=Math.floor(n/size);if(q){parts.push(under1000(q)+' '+name);n%=size;}
+ }
+ if(n)parts.push(under1000(n));return parts.join(' ');
+}
+function details(){
+ const rows=values();const subtotal=rows.reduce((s,r)=>s+r.qty*r.rate,0);
+ const sgst=num($('sgst').value),cgst=num($('cgst').value),igst=num($('igst').value);
+ const taxS=subtotal*sgst/100,taxC=subtotal*cgst/100,taxI=subtotal*igst/100;
+ const grand=subtotal+taxS+taxC+taxI;
+ return {rows,subtotal,sgst,cgst,igst,taxS,taxC,taxI,grand,
+ partyName:$('in_partyName').value,partyGST:$('in_partyGST').value,partyAddress:$('in_partyAddress').value,
+ invoiceNo:$('in_invoiceNo').value,invoiceDate:$('in_invoiceDate').value,workOrder:$('in_workOrder').value,
+ serviceCode:$('in_serviceCode').value,dispatch:$('in_dispatch').value,vehicle:$('in_vehicle').value,place:$('in_place').value};
+}
+function el(tag,className='',html=''){
+ const x=document.createElement(tag);if(className)x.className=className;if(html)x.innerHTML=html;return x;
+}
+function brand(compact=false){return el('div','brand'+(compact?' compact':''),`
+ <h4>INVOICE ISSUED UNDER RULE -7 AND SECTION 28</h4>
+ <h2>CHAUDHARY CONSTRUCTION</h2>
+ <div class="subtitle">Add: Vill. Madhubani, P.O. Dumaria (Estate), W. Champaran, Bihar, 845103</div>
+ <div class="gstin">GSTIN : 10CDAPC5190C1ZF</div>`)}
+function infoTable(d){
+ const x=el('table','info-table');
+ const pairs1=[['Name',d.partyName],['Address',d.partyAddress],['GSTIN No.',d.partyGST]];
+ const pairs2=[['Invoice No.',d.invoiceNo],['Invoice Date',d.invoiceDate],['Work Order No.',d.workOrder],['Service Code',d.serviceCode],['Dispatch Through',d.dispatch],['Vehicle No.',d.vehicle],['Place of Supply',d.place]];
+ const kv=arr=>`<div class="kv">${arr.map(([k,v])=>`<div class="k">${escapeHTML(k)} :</div><div class="v">${escapeHTML(v)}</div>`).join('')}</div>`;
+ x.innerHTML=`<tr><td><strong>Party's Details / Bill To</strong><div style="height:8px"></div>${kv(pairs1)}</td><td>${kv(pairs2)}</td></tr>`;
+ return x;
+}
+function itemsTable(){
+ const t=el('table','items-table');
+ t.innerHTML='<thead><tr><th>Sr</th><th>Description of Goods</th><th>SAC</th><th>Qty</th><th>Rate (₹)</th><th>UOM</th><th>Amount (₹)</th></tr></thead><tbody></tbody>';
+ return t;
+}
+function itemRow(r){
+ const tr=document.createElement('tr');
+ const values=[r.sr,r.desc,r.sac,r.qty,r.rate.toFixed(2),r.uom,(r.qty*r.rate).toFixed(2)];
+ values.forEach((v,i)=>{const td=document.createElement('td');td.textContent=text(v);if(i===3||i===4||i===6)td.className='number';if(i===0)td.style.textAlign='center';tr.appendChild(td)});
+ return tr;
+}
+function totalsSection(d){
+ const wrap=el('div','closing');
+ const t=el('table','totals');
+ const add=(name,val)=>{const tr=t.insertRow();const a=tr.insertCell(),b=tr.insertCell();a.innerHTML='<b>'+escapeHTML(name)+'</b>';b.textContent=money(val)};
+ add('Total Amount Before Tax',d.subtotal);
+ add('Add: SGST @ '+d.sgst+' %',d.taxS);
+ add('Add: CGST @ '+d.cgst+' %',d.taxC);
+ add('Add: IGST @ '+d.igst+' %',d.taxI);
+ add('Total Invoice Value (₹)',d.grand);
+ wrap.appendChild(t);
+ const totalPaise=Math.round(d.grand*100),rupees=Math.floor(totalPaise/100),paise=totalPaise%100;
+ const wordString=numberWords(rupees)+' Rupees'+(paise?' and '+numberWords(paise)+' Paise':'')+' Only';
+ const words=el('div','box');words.innerHTML='<b>Rs. (in Words):</b> '+escapeHTML(wordString);wrap.appendChild(words);
+ const bank=el('div','box','<b>BANK DETAILS:</b><div style="margin-top:8px"><b>Bank Account No.:</b> 39930691999</div><div style="margin-top:8px"><b>IFSC Code:</b> SBIN0000718</div>');wrap.appendChild(bank);
+ const footer=el('div','footer-box');
+ const sigMarkup=signatureData?`<img class="sign-img" src="${signatureData}" alt="Authorized signature">`:'<div style="height:50px"></div>';
+ footer.innerHTML=`<div class="footer-flex"><div class="tc"><b>Terms &amp; Conditions.</b><ol><li>Goods once sold will not be taken back.</li><li>All disputes subject to Bihar Jurisdiction only.</li></ol></div><div class="sig">For <b>AMIT KUMAR</b>${sigMarkup}<div class="sign-title">Authorized Signatory</div></div></div>`;
+ wrap.appendChild(footer);return wrap;
+}
+function createPage(d,continuation=false){
+ const page=el('div','pdf-page export-page');
+ const sheet=el('div','invoice-sheet');page.appendChild(sheet);
+ sheet.appendChild(brand(continuation));
+ if(continuation)sheet.appendChild(el('div','continued','Invoice No.: '+escapeHTML(d.invoiceNo||'—')+' &nbsp; | &nbsp; Continued'));
+ else sheet.appendChild(infoTable(d));
+ const table=itemsTable();sheet.appendChild(table);
+ return {page,sheet,table,tbody:table.tBodies[0]};
+}
+/* The height budget is measured in actual browser pixels, not guessed row counts.
+   If a new row would overflow, it is moved intact to the next A4 page. */
+function paginate(target,d){
+ target.innerHTML='';
+ const MAX_CONTENT_HEIGHT=1058; // reserves space for page number, border and browser rounding
+ const pages=[];
+ let p=createPage(d,false);target.appendChild(p.page);pages.push(p);
+ for(const r of d.rows){
+   const row=itemRow(r);p.tbody.appendChild(row);
+   if(p.sheet.scrollHeight>MAX_CONTENT_HEIGHT && p.tbody.rows.length>1){
+     row.remove();p=createPage(d,true);target.appendChild(p.page);pages.push(p);p.tbody.appendChild(row);
+   }
+   if(p.sheet.scrollHeight>MAX_CONTENT_HEIGHT){
+     // A single unusually long item cannot be kept intact on one A4 page.
+     // Signal this rather than silently clipping or splitting the row.
+     throw new Error('Item '+r.sr+' is too tall for one A4 page. Shorten its Description/SAC or reduce text size.');
+   }
+ }
+ // Closing sections are kept together. If they do not fit, put them on a fresh page.
+ let closing=totalsSection(d);p.sheet.appendChild(closing);
+ if(p.sheet.scrollHeight>MAX_CONTENT_HEIGHT){
+    closing.remove();p=createPage(d,true);target.appendChild(p.page);pages.push(p);
+    closing=totalsSection(d);p.sheet.appendChild(closing);
+    if(p.tbody.rows.length===0) p.table.remove();
+    if(p.sheet.scrollHeight>MAX_CONTENT_HEIGHT)throw new Error('Invoice totals/footer cannot fit on one A4 page.');
+ }
+ pages.forEach((obj,i)=>obj.sheet.appendChild(el('div','page-count',`Page ${i+1} of ${pages.length}`)));
+ return pages;
+}
+function validateInvoice(d){
+ const errors=[];
+ if(!d.partyName.trim())errors.push('Party Name is required.');
+ if(!d.partyAddress.trim())errors.push('Party Address is required.');
+ if(!d.invoiceNo.trim())errors.push('Invoice No. is required.');
+ const match=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d.invoiceDate.trim());
+ if(!match)errors.push('Invoice Date must be dd/mm/yyyy.');
+ else { const day=+match[1],month=+match[2],year=+match[3]; const date=new Date(year,month-1,day);
+  if(date.getFullYear()!==year||date.getMonth()!==month-1||date.getDate()!==day)errors.push('Invoice Date is invalid.'); }
+ if(d.partyGST.trim() && !/^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]{3}$/i.test(d.partyGST.trim()))errors.push('Party GSTIN must contain 15 alphanumeric characters in the correct format.');
+ if(d.rows.length===0)errors.push('Add at least one item.');
+ d.rows.forEach(r=>{
+  if(!r.desc.trim())errors.push('Item '+r.sr+': Description is required.');
+  if(!r.sac.trim())errors.push('Item '+r.sr+': SAC is required.');
+  if(!Number.isFinite(r.qty)||r.qty<=0)errors.push('Item '+r.sr+': Quantity must be greater than zero.');
+  if(!Number.isFinite(r.rate)||r.rate<0)errors.push('Item '+r.sr+': Rate must be zero or greater.');
+ });
+ if([d.sgst,d.cgst,d.igst].some(x=>!Number.isFinite(x)||x>100))errors.push('GST percentages must be between 0 and 100.');
+ if(d.igst>0 && (d.sgst>0||d.cgst>0))errors.push('Use IGST or SGST/CGST, not both.');
+ if((d.sgst>0||d.cgst>0)&&Math.abs(d.sgst-d.cgst)>0.001)errors.push('SGST and CGST should generally be equal; verify the tax configuration.');
+ if(d.grand>999999999)errors.push('Invoice amount exceeds supported amount-to-words range.');
+ if(errors.length)throw new Error(errors.join('\n'));
 }
 
-/* ---------------- RENUMBER ---------------- */
-
-function renumber() {
-
-    [...tbody.rows].forEach((tr, i) => {
-        tr.querySelector('.serial').textContent = i + 1;
-    });
-
-}
-
-/* ---------------- ITEM VALUES ---------------- */
-
-function values() {
-
-    return [...tbody.rows].map((tr, i) => ({
-
-        sr: i + 1,
-
-        desc: tr.querySelector('.desc').value,
-
-        sac: tr.querySelector('.sac').value,
-
-        qty: num(tr.querySelector('.qty').value),
-
-        rate: num(tr.querySelector('.rate').value),
-
-        uom: tr.querySelector('.uom').value
-
-    }));
-
-}
-
-/* ---------------- AMOUNT ---------------- */
-
-function updateAmounts() {
-
-    for (const tr of tbody.rows) {
-
-        const qty = num(tr.querySelector('.qty').value);
-        const rate = num(tr.querySelector('.rate').value);
-
-        const amt = qty * rate;
-
-        tr.querySelector('.amount').value = amt.toFixed(2);
-    }
-
-}
-
-/* ---------------- NUMBER TO WORDS ---------------- */
-
-function numberWords(n) {
-
-    n = Math.floor(num(n));
-
-    if (n === 0) return 'Zero';
-
-    const a = [
-        '',
-        'One','Two','Three','Four','Five',
-        'Six','Seven','Eight','Nine','Ten',
-        'Eleven','Twelve','Thirteen','Fourteen',
-        'Fifteen','Sixteen','Seventeen',
-        'Eighteen','Nineteen'
-    ];
-
-    const b = [
-        '',
-        '',
-        'Twenty','Thirty','Forty','Fifty',
-        'Sixty','Seventy','Eighty','Ninety'
-    ];
-
-    const under100 = x =>
-        x < 20
-            ? a[x]
-            : b[Math.floor(x / 10)] +
-              (x % 10 ? ' ' + a[x % 10] : '');
-
-    const under1000 = x =>
-        x < 100
-            ? under100(x)
-            : a[Math.floor(x / 100)] +
-              ' Hundred' +
-              (x % 100 ? ' ' + under100(x % 100) : '');
-
-    const parts = [];
-
-    for (const [size, name] of [
-        [10000000, 'Crore'],
-        [100000, 'Lakh'],
-        [1000, 'Thousand']
-    ]) {
-
-        const q = Math.floor(n / size);
-
-        if (q) {
-
-            parts.push(under1000(q) + ' ' + name);
-
-            n %= size;
-        }
-    }
-
-    if (n) parts.push(under1000(n));
-
-    return parts.join(' ');
-}
-
-/* ---------------- INVOICE DETAILS ---------------- */
-
-function details() {
-
-    const rows = values();
-
-    const subtotal = rows.reduce(
-        (s, r) => s + r.qty * r.rate, 0
-    );
-
-    const sgst = num($('sgst').value);
-    const cgst = num($('cgst').value);
-    const igst = num($('igst').value);
-
-    const taxS = subtotal * sgst / 100;
-    const taxC = subtotal * cgst / 100;
-    const taxI = subtotal * igst / 100;
-
-    const grand = subtotal + taxS + taxC + taxI;
-
-    return {
-
-        rows,
-        subtotal,
-        sgst,
-        cgst,
-        igst,
-        taxS,
-        taxC,
-        taxI,
-        grand,
-
-        partyName: $('in_partyName').value,
-        partyGST: $('in_partyGST').value,
-        partyAddress: $('in_partyAddress').value,
-
-        invoiceNo: $('in_invoiceNo').value,
-        invoiceDate: $('in_invoiceDate').value,
-
-        workOrder: $('in_workOrder').value,
-        serviceCode: $('in_serviceCode').value,
-
-        dispatch: $('in_dispatch').value,
-        vehicle: $('in_vehicle').value,
-        place: $('in_place').value
-    };
-}
-
-/* ---------------- ELEMENT HELPER ---------------- */
-
-function el(tag, className = '', html = '') {
-
-    const x = document.createElement(tag);
-
-    if (className) x.className = className;
-
-    if (html) x.innerHTML = html;
-
-    return x;
-}
-
-/* ---------------- COMPANY HEADER ---------------- */
-
-function brand(compact = false) {
-
-    return el(
-        'div',
-        'brand' + (compact ? ' compact' : ''),
-        `
-        <h4>
-            INVOICE ISSUED UNDER RULE -7 AND SECTION 28
-        </h4>
-
-        <h2>CHAUDHARY CONSTRUCTION</h2>
-
-        <div class="subtitle">
-            Add: Vill. Madhubani, P.O. Dumaria (Estate),
-            W. Champaran, Bihar, 845103
-        </div>
-
-        <div class="gstin">
-            GSTIN : 10CDAPC5190C1ZF
-        </div>
-        `
-    );
-}
-
-/* ---------------- PARTY DETAILS ---------------- */
-
-function infoTable(d) {
-
-    const x = el('table', 'info-table');
-
-    const pairs1 = [
-        ['Name', d.partyName],
-        ['Address', d.partyAddress],
-        ['GSTIN No.', d.partyGST]
-    ];
-
-    const pairs2 = [
-        ['Invoice No.', d.invoiceNo],
-        ['Invoice Date', d.invoiceDate],
-        ['Work Order No.', d.workOrder],
-        ['Service Code', d.serviceCode],
-        ['Dispatch Through', d.dispatch],
-        ['Vehicle No.', d.vehicle],
-        ['Place of Supply', d.place]
-    ];
-
-    const kv = arr => `
-        <div class="kv">
-            ${arr.map(([k, v]) => `
-                <div class="k">${escapeHTML(k)} :</div>
-                <div class="v">${escapeHTML(v)}</div>
-            `).join('')}
-        </div>
-    `;
-
-    x.innerHTML = `
-        <tr>
-            <td>
-                <strong>Party's Details / Bill To</strong>
-                <div style="height:8px"></div>
-                ${kv(pairs1)}
-            </td>
-
-            <td>
-                ${kv(pairs2)}
-            </td>
-        </tr>
-    `;
-
-    return x;
-}
-
-/* ---------------- PDF ITEMS TABLE ---------------- */
-
-function itemsTable() {
-
-    const t = el('table', 'items-table');
-
-    t.innerHTML = `
-        <thead>
-            <tr>
-                <th>Sr</th>
-                <th>Description of Goods</th>
-                <th>SAC</th>
-                <th>Qty</th>
-                <th>Rate (₹)</th>
-                <th>UOM</th>
-                <th>Amount (₹)</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    `;
-
-    return t;
-}
-
-/* ---------------- PDF ITEM ROW ---------------- */
-
-function itemRow(r) {
-
-    const tr = document.createElement('tr');
-
-    const rowValues = [
-        r.sr,
-        r.desc,
-        r.sac,
-        r.qty,
-        r.rate.toFixed(2),
-        r.uom,
-        (r.qty * r.rate).toFixed(2)
-    ];
-
-    rowValues.forEach((v, i) => {
-
-        const td = document.createElement('td');
-
-        td.textContent = text(v);
-
-        if (i === 3 || i === 4 || i === 6) {
-            td.className = 'number';
-        }
-
-        if (i === 0) {
-            td.style.textAlign = 'center';
-        }
-
-        tr.appendChild(td);
-    });
-
-    return tr;
-}
-
-/* ---------------- TOTALS ---------------- */
-
-function totalsSection(d) {
-
-    const wrap = el('div', 'closing');
-
-    const t = el('table', 'totals');
-
-    const add = (name, val) => {
-
-        const tr = t.insertRow();
-
-        const a = tr.insertCell();
-        const b = tr.insertCell();
-
-        a.innerHTML = '<b>' + escapeHTML(name) + '</b>';
-
-        b.textContent = money(val);
-    };
-
-    add('Total Amount Before Tax', d.subtotal);
-    add('Add: SGST @ ' + d.sgst + ' %', d.taxS);
-    add('Add: CGST @ ' + d.cgst + ' %', d.taxC);
-    add('Add: IGST @ ' + d.igst + ' %', d.taxI);
-    add('Total Invoice Value (₹)', d.grand);
-
-    wrap.appendChild(t);
-
-    const roundedPaise = Math.round(d.grand * 100);
-    const rupees = Math.floor(roundedPaise / 100);
-    const paise = roundedPaise % 100;
-
-    const wordString =
-        numberWords(rupees) +
-        ' Rupees' +
-        (paise
-            ? ' and ' + numberWords(paise) + ' Paise'
-            : '') +
-        ' Only';
-
-    const words = el('div', 'box');
-
-    words.innerHTML =
-        '<b>Rs. (in Words):</b> ' +
-        escapeHTML(wordString);
-
-    wrap.appendChild(words);
-
-    /* BANK DETAILS */
-
-    const bank = el(
-        'div',
-        'box',
-        `
-        <b>BANK DETAILS:</b>
-
-        <div style="margin-top:8px">
-            <b>Bank Account No.:</b> 39930691999
-        </div>
-
-        <div style="margin-top:8px">
-            <b>IFSC Code:</b> SBIN0000718
-        </div>
-        `
-    );
-
-    wrap.appendChild(bank);
-
-    /* FOOTER */
-
-    const footer = el('div', 'footer-box');
-
-    const sigMarkup = signatureData
-        ? `<img class="sign-img"
-                src="${signatureData}"
-                alt="Authorized signature">`
-        : '<div style="height:50px"></div>';
-
-    footer.innerHTML = `
-        <div class="footer-flex">
-
-            <div class="tc">
-
-                <b>Terms &amp; Conditions.</b>
-
-                <ol>
-                    <li>
-                        Goods once sold will not be taken back.
-                    </li>
-                    <li>
-                        All disputes subject to Bihar Jurisdiction only.
-                    </li>
-                </ol>
-
-            </div>
-
-            <div class="sig">
-
-                For <b>AMIT KUMAR</b>
-
-                ${sigMarkup}
-
-                <div class="sign-title">
-                    Authorized Signatory
-                </div>
-
-            </div>
-
-        </div>
-    `;
-
-    wrap.appendChild(footer);
-
-    return wrap;
-}
-
-/* ---------------- CREATE A4 PAGE ---------------- */
-
-function createPage(d, continuation = false) {
-
-    const page = el('div', 'pdf-page export-page');
-
-    const sheet = el('div', 'invoice-sheet');
-
-    page.appendChild(sheet);
-
-    sheet.appendChild(brand(continuation));
-
-    if (continuation) {
-
-        sheet.appendChild(
-            el(
-                'div',
-                'continued',
-                'Invoice No.: ' +
-                escapeHTML(d.invoiceNo || '—') +
-                ' &nbsp; | &nbsp; Continued'
-            )
-        );
-
-    } else {
-
-        sheet.appendChild(infoTable(d));
-    }
-
-    const table = itemsTable();
-
-    sheet.appendChild(table);
-
-    return {
-        page,
-        sheet,
-        table,
-        tbody: table.tBodies[0]
-    };
-}
-
-/* ---------------- AUTOMATIC A4 PAGINATION ---------------- */
-
-function paginate(target, d) {
-
-    target.innerHTML = '';
-
-    const MAX_CONTENT_HEIGHT = 1090;
-
-    const pages = [];
-
-    let p = createPage(d, false);
-
-    target.appendChild(p.page);
-
-    pages.push(p);
-
-    /* Add rows without splitting */
-
-    for (const r of d.rows) {
-
-        const row = itemRow(r);
-
-        p.tbody.appendChild(row);
-
-        if (
-            p.sheet.scrollHeight > MAX_CONTENT_HEIGHT &&
-            p.tbody.rows.length > 1
-        ) {
-
-            row.remove();
-
-            p = createPage(d, true);
-
-            target.appendChild(p.page);
-
-            pages.push(p);
-
-            p.tbody.appendChild(row);
-        }
-
-        /* Exception for a single oversized row */
-
-        if (p.sheet.scrollHeight > MAX_CONTENT_HEIGHT) {
-
-            throw new Error(
-                'Item ' + r.sr +
-                ' is too tall for one A4 page. ' +
-                'Shorten its Description/SAC or reduce text size.'
-            );
-        }
-    }
-
-    /* Closing totals and footer */
-
-    let closing = totalsSection(d);
-
-    p.sheet.appendChild(closing);
-
-    if (p.sheet.scrollHeight > MAX_CONTENT_HEIGHT) {
-
-        closing.remove();
-
-        p = createPage(d, true);
-
-        target.appendChild(p.page);
-
-        pages.push(p);
-
-        closing = totalsSection(d);
-
-        p.sheet.appendChild(closing);
-
-        if (p.sheet.scrollHeight > MAX_CONTENT_HEIGHT) {
-
-            throw new Error(
-                'Invoice totals/footer cannot fit on one A4 page.'
-            );
-        }
-    }
-
-    /* Page numbering */
-
-    pages.forEach((obj, i) => {
-
-        obj.sheet.appendChild(
-            el(
-                'div',
-                'page-count',
-                `Page ${i + 1} of ${pages.length}`
-            )
-        );
-
-        if (obj.sheet.scrollHeight > MAX_CONTENT_HEIGHT) {
-            throw new Error(
-                'Page ' + (i + 1) +
-                ' exceeds A4 height after page numbering.'
-            );
-        }
-    });
-
-    return pages;
-}
-
-/* ---------------- PREVIEW ---------------- */
-
-function renderPreview() {
-
-    previewQueued = false;
-
-    updateAmounts();
-
-    try {
-
-        paginate($('preview'), details());
-
-    } catch (err) {
-
-        $('preview').innerHTML =
-            '<div class="editor" style="color:#b00020">' +
-            escapeHTML(err.message) +
-            '</div>';
-    }
-}
-
-function requestPreview() {
-
-    if (previewQueued) return;
-
-    previewQueued = true;
-
-    requestAnimationFrame(renderPreview);
-}
-
-/* ---------------- BUTTON EVENTS ---------------- */
-
-$('addRowBtn').addEventListener('click', addRow);
-
-tbody.addEventListener('click', e => {
-
-    if (e.target.closest('.delete-row')) {
-
-        e.target.closest('tr').remove();
-
-        renumber();
-
-        updateAmounts();
-
-        requestPreview();
-    }
+function renderPreview(){previewQueued=false;updateAmounts();try{paginate($('preview'),details())}catch(err){$('preview').innerHTML='<div class="editor" style="color:#b00020">'+escapeHTML(err.message)+'</div>'}}
+function requestPreview(){if(previewQueued)return;previewQueued=true;requestAnimationFrame(renderPreview)}
+
+$('addRowBtn').addEventListener('click',addRow);
+tbody.addEventListener('click',e=>{if(e.target.closest('.delete-row')){e.target.closest('tr').remove();renumber();updateAmounts();requestPreview()}});
+tbody.addEventListener('input',()=>{updateAmounts();requestPreview()});
+$('editor').addEventListener('input',requestPreview);
+$('applyBtn').addEventListener('click',renderPreview);
+
+
+$('generateBtn').addEventListener('click',async()=>{
+ const btn=$('generateBtn');btn.disabled=true;btn.textContent='Generating PDF...';
+ const captureHost=document.createElement('div');
+ captureHost.style.cssText='position:fixed;left:-10000px;top:0;width:794px;background:#fff;z-index:-1;';
+ document.body.appendChild(captureHost);
+ try{
+   if(!window.jspdf||!window.html2canvas)throw new Error('PDF libraries could not load. Check your internet connection.');
+   const d=details();validateInvoice(d);await document.fonts.ready;const pages=paginate(captureHost,d);
+   await Promise.all([...captureHost.querySelectorAll('img')].map(img=>img.decode?img.decode().catch(()=>{}):Promise.resolve()));
+   const {jsPDF}=window.jspdf;const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+   for(let i=0;i<pages.length;i++){
+     const canvas=await html2canvas(pages[i].page,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:794,height:1123,windowWidth:1100});
+     if(i)pdf.addPage();
+     pdf.addImage(canvas.toDataURL('image/jpeg',0.94),'JPEG',0,0,210,297,undefined,'FAST');
+   }
+   const safeNo=(d.invoiceNo||'CC').replace(/[^a-z0-9_-]/gi,'_').slice(0,70);
+   pdf.save('Invoice_'+safeNo+'.pdf');
+ }catch(e){console.error(e);alert('Unable to generate PDF: '+e.message)}
+ finally{captureHost.remove();btn.disabled=false;btn.textContent='Generate PDF'}
 });
-
-tbody.addEventListener('input', () => {
-
-    updateAmounts();
-
-    requestPreview();
-});
-
-$('editor').addEventListener('input', requestPreview);
-
-$('applyBtn').addEventListener('click', renderPreview);
-
-/* ---------------- SIGNATURE UPLOAD ---------------- */
-
-$('in_signature').addEventListener('change', async e => {
-
-    const file = e.target.files?.[0];
-
-    if (!file) {
-
-        signatureData = '';
-
-        requestPreview();
-
-        return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-
-        alert('Please select an image.');
-
-        return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-
-        signatureData = reader.result;
-
-        requestPreview();
-    };
-
-    reader.readAsDataURL(file);
-});
-
-/* ---------------- GENERATE MULTI-PAGE PDF ---------------- */
-
-$('generateBtn').addEventListener('click', async () => {
-
-    const btn = $('generateBtn');
-
-    btn.disabled = true;
-
-    btn.textContent = 'Generating PDF...';
-
-    const captureHost = document.createElement('div');
-
-    captureHost.style.cssText = `
-        position:fixed;
-        left:-10000px;
-        top:0;
-        width:794px;
-        background:#fff;
-        z-index:-1;
-    `;
-
-    document.body.appendChild(captureHost);
-
-    try {
-
-        if (!window.jspdf || !window.html2canvas) {
-
-            throw new Error(
-                'PDF libraries could not load. Check your internet connection.'
-            );
-        }
-
-        const d = details();
-
-        /* Create pages based on actual item heights */
-
-        const pages = paginate(captureHost, d);
-
-        /* Wait until signature loads */
-
-        await Promise.all(
-            [...captureHost.querySelectorAll('img')].map(img =>
-                img.decode
-                    ? img.decode().catch(() => {})
-                    : Promise.resolve()
-            )
-        );
-
-        const { jsPDF } = window.jspdf;
-
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4',
-            compress: true
-        });
-
-        /* Export one A4 page at a time */
-
-        for (let i = 0; i < pages.length; i++) {
-
-            const canvas = await html2canvas(
-                pages[i].page,
-                {
-                    scale: 2,
-                    backgroundColor: '#ffffff',
-                    useCORS: true,
-                    logging: false,
-                    width: 794,
-                    height: 1123,
-                    windowWidth: 1100
-                }
-            );
-
-            if (i) {
-                pdf.addPage();
-            }
-
-            const imgData = canvas.toDataURL(
-                'image/jpeg',
-                0.94
-            );
-
-            pdf.addImage(
-                imgData,
-                'JPEG',
-                0,
-                0,
-                210,
-                297,
-                undefined,
-                'FAST'
-            );
-        }
-
-        /* PDF filename */
-
-        const safeNo = (
-            d.invoiceNo || 'CC'
-        )
-        .replace(/[^a-z0-9_-]/gi, '_')
-        .slice(0, 70);
-
-        pdf.save('Invoice_' + safeNo + '.pdf');
-
-    } catch (e) {
-
-        console.error(e);
-
-        alert(
-            'Unable to generate PDF: ' + e.message
-        );
-
-    } finally {
-
-        captureHost.remove();
-
-        btn.disabled = false;
-
-        btn.textContent = 'Generate PDF';
-    }
-});
-
-/* Initial item row */
 addRow();
-
 </script>
-
 </body>
 </html>
